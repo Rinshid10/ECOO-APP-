@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -102,6 +104,9 @@ class _MyAppState extends State<MyApp> {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
 
+            // Enable scrolling on web with mouse drag
+            scrollBehavior: AppScrollBehavior(),
+
             // Home screen
             home: const SplashScreen(),
           );
@@ -109,4 +114,17 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+/// Custom scroll behavior to enable drag scrolling on all platforms
+/// This fixes the web scrolling issue where mouse drag doesn't work by default
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.unknown,
+      };
 }
