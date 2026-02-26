@@ -6,7 +6,7 @@ class AppColors {
   AppColors._(); // Private constructor to prevent instantiation
 
   // Primary Colors
-  static const Color primary = Color(0xFF6C63FF);
+  static const Color primary = Color(0xff20319D);
   static const Color primaryLight = Color(0xFF8B85FF);
   static const Color primaryDark = Color(0xFF4A42E8);
 
