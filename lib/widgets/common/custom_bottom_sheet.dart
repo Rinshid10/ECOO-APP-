@@ -140,7 +140,7 @@ class CustomBottomSheet extends StatelessWidget {
                       children: actions!
                           .map((action) => Expanded(child: action))
                           .toList()
-                        ..insert(1, const SizedBox(width: 16)),
+                          ..insert(1, const Expanded(child: SizedBox(width: 16))),
                     ),
                   ),
                 ),
