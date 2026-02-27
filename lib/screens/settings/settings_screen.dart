@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common/custom_snackbar.dart';
+import '../../admin/screens/admin_login_screen.dart';
 
 /// Settings screen with modern UI design
 /// Features animated toggles, organized sections, and smooth interactions
@@ -616,6 +617,23 @@ class _SettingsScreenState extends State<SettingsScreen>
             onTap: () {
               HapticFeedback.lightImpact();
               // Open app store
+            },
+          ),
+          _buildDivider(),
+          _buildActionTile(
+            context: context,
+            icon: Iconsax.security_user,
+            iconColor: AppColors.primary,
+            title: 'Admin Panel',
+            subtitle: 'Access store management',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminLoginScreen(),
+                ),
+              );
             },
           ),
         ]),

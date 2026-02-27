@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
-import '../main_navigation.dart';
+import '../auth/welcome_screen.dart';
 
 /// Splash screen shown on app launch
 /// Displays app logo and branding while loading
@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen>
     _animationController.forward();
   }
 
-  /// Navigate to home screen after delay
+  /// Navigate to welcome screen after delay
   void _navigateToHome() {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const MainNavigation(),
+                const WelcomeScreen(),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);

@@ -14,6 +14,9 @@ import 'providers/wishlist_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/user_provider.dart';
 
+// Admin providers
+import 'admin/providers/admin_provider.dart';
+
 // Screens
 import 'screens/splash/splash_screen.dart';
 
@@ -91,6 +94,9 @@ class _MyAppState extends State<MyApp> {
             return userProvider;
           },
         ),
+
+        // Admin provider for admin panel
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
