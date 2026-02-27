@@ -29,8 +29,6 @@ class _AdminMainScreenState extends State<AdminMainScreen>
   int _selectedIndex = 0;
   bool _isSidebarExpanded = true;
 
-  late AnimationController _animationController;
-
   final List<AdminMenuItem> _menuItems = [
     AdminMenuItem(
       icon: Iconsax.home_2,
@@ -71,57 +69,45 @@ class _AdminMainScreenState extends State<AdminMainScreen>
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isWideScreen = MediaQuery.of(context).size.width > 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 900;
+    final isMediumScreen = screenWidth > 600;
 
     return Scaffold(
       backgroundColor: AdminColors.background,
-      drawer: isWideScreen ? null : _buildDrawer(),
+      drawer: !isMediumScreen ? _buildDrawer() : null,
       body: SafeArea(
         child: Row(
           children: [
             // Sidebar (visible on wide screens)
-            if (isWideScreen)
+            if (isMediumScreen)
               AdminSidebar(
                 menuItems: _menuItems,
                 selectedIndex: _selectedIndex,
-                isExpanded: _isSidebarExpanded,
+                isExpanded: isWideScreen ? _isSidebarExpanded : false,
                 onItemSelected: (index) {
                   HapticFeedback.lightImpact();
                   setState(() => _selectedIndex = index);
                 },
                 onToggleExpanded: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _isSidebarExpanded = !_isSidebarExpanded);
+                  if (isWideScreen) {
+                    HapticFeedback.lightImpact();
+                    setState(() => _isSidebarExpanded = !_isSidebarExpanded);
+                  }
                 },
               ),
-        
+
             // Main content
             Expanded(
               child: Column(
                 children: [
                   // Top bar
-                  _topBar(isWideScreen),
-        
+                  _buildTopBar(isWideScreen, isMediumScreen),
+
                   // Page content
                   Expanded(
-                    child: _pageContent(),
+                    child: _buildPageContent(),
                   ),
                 ],
               ),
@@ -152,13 +138,14 @@ class _AdminMainScreenState extends State<AdminMainScreen>
   }
 
   /// Build top bar
-  Widget _topBar(bool isWideScreen) {
+  Widget _buildTopBar(bool isWideScreen, bool isMediumScreen) {
     return Row(
       children: [
-        if (!isWideScreen)
-          AdminMobileMenuButton(
-            onPressed: () {},
-          ),
+        // Mobile menu button
+        if (!isMediumScreen)
+          const AdminMobileMenuButton(),
+
+        // Top bar
         Expanded(
           child: AdminTopBar(
             pageTitle: _menuItems[_selectedIndex].title,
@@ -172,7 +159,7 @@ class _AdminMainScreenState extends State<AdminMainScreen>
   }
 
   /// Build page content
-  Widget _pageContent() {
+  Widget _buildPageContent() {
     switch (_selectedIndex) {
       case 0:
         return const AdminDashboardScreen();

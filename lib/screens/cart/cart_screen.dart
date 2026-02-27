@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/common/custom_app_bar.dart';
@@ -14,17 +15,18 @@ import '../../widgets/common/animated_quantity_selector.dart';
 import '../../widgets/common/animated_list_item.dart';
 import '../checkout/checkout_screen.dart';
 
-/// Cart screen displaying items in shopping cart
-/// Shows item list, quantities, and order summary with animations
+/// Cart screen - responsive layout
+/// Desktop: two columns (items left, summary right)
+/// Mobile: stacked layout
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: AppStrings.myCart,
-      ),
+      appBar: isDesktop ? null : const CustomAppBar(title: AppStrings.myCart),
       body: Consumer<CartProvider>(
         builder: (context, cart, child) {
           if (cart.isEmpty) {
@@ -32,31 +34,270 @@ class CartScreen extends StatelessWidget {
               onAction: () => Navigator.pop(context),
             );
           }
-          return Column(
-            children: [
-              // Free shipping progress
-              if (cart.subtotal < 50) _buildFreeShippingProgress(context, cart),
 
-              // Cart items list
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cart.items.length,
-                  itemBuilder: (context, index) {
-                    return AnimatedListItem(
-                      index: index,
-                      child: _buildCartItem(context, cart.items[index], cart),
-                    );
-                  },
-                ),
-              ),
-
-              // Order summary and checkout
-              _buildOrderSummary(context, cart),
-            ],
-          );
+          if (isDesktop) {
+            return _buildDesktopLayout(context, cart);
+          }
+          return _buildMobileLayout(context, cart);
         },
       ),
+    );
+  }
+
+  /// Desktop layout: two columns
+  Widget _buildDesktopLayout(BuildContext context, CartProvider cart) {
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: Responsive.maxContentWidth),
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppStrings.myCart,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${cart.itemCount} items in your cart',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cart items (left)
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        children: [
+                          if (cart.subtotal < 50)
+                            _buildFreeShippingProgress(context, cart),
+                          ...cart.items.map((item) {
+                            return AnimatedListItem(
+                              index: cart.items.indexOf(item),
+                              child: _buildCartItem(context, item, cart),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+
+                    // Order summary (right)
+                    Expanded(
+                      flex: 4,
+                      child: _buildDesktopOrderSummary(context, cart),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Desktop order summary card
+  Widget _buildDesktopOrderSummary(BuildContext context, CartProvider cart) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Order Summary',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 24),
+
+          // Coupon code
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.05),
+                  AppColors.primaryLight.withOpacity(0.05),
+                ],
+              ),
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(Iconsax.discount_shape, color: AppColors.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: AppStrings.couponCode,
+                      hintStyle: TextStyle(color: AppColors.textLight),
+                      border: InputBorder.none,
+                      fillColor: Colors.transparent,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    AppStrings.apply,
+                    style: TextStyle(
+                      color: AppColors.textWhite,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          _buildSummaryRow(context, AppStrings.subtotal,
+              '\$${cart.subtotal.toStringAsFixed(2)}'),
+          const SizedBox(height: 12),
+          _buildSummaryRow(
+              context,
+              AppStrings.shipping,
+              cart.shippingCost == 0
+                  ? 'FREE'
+                  : '\$${cart.shippingCost.toStringAsFixed(2)}',
+              valueColor: cart.shippingCost == 0 ? AppColors.accent : null),
+          const SizedBox(height: 12),
+          _buildSummaryRow(
+              context, AppStrings.tax, '\$${cart.tax.toStringAsFixed(2)}'),
+
+          if (cart.totalSavings > 0) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.savings_outlined,
+                      color: AppColors.success, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'You\'re saving \$${cart.totalSavings.toStringAsFixed(2)}!',
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const Divider(height: 32),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppStrings.total,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Text(
+                '\$${cart.total.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          CustomButton(
+            text: '${AppStrings.checkout} (${cart.itemCount} items)',
+            icon: Iconsax.shopping_bag,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CheckoutScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Simple summary row for desktop
+  Widget _buildSummaryRow(BuildContext context, String label, String value,
+      {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: valueColor,
+              ),
+        ),
+      ],
+    );
+  }
+
+  /// Mobile layout: stacked
+  Widget _buildMobileLayout(BuildContext context, CartProvider cart) {
+    return Column(
+      children: [
+        if (cart.subtotal < 50) _buildFreeShippingProgress(context, cart),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: cart.items.length,
+            itemBuilder: (context, index) {
+              return AnimatedListItem(
+                index: index,
+                child: _buildCartItem(context, cart.items[index], cart),
+              );
+            },
+          ),
+        ),
+        _buildMobileOrderSummary(context, cart),
+      ],
     );
   }
 
@@ -112,7 +353,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  /// Build individual cart item with swipe to delete
+  /// Build individual cart item
   Widget _buildCartItem(BuildContext context, CartItem item, CartProvider cart) {
     return Dismissible(
       key: Key(item.product.id),
@@ -165,7 +406,6 @@ class CartScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Row(
             children: [
-              // Product image
               Hero(
                 tag: 'cart_${item.product.id}',
                 child: CachedNetworkImage(
@@ -182,15 +422,12 @@ class CartScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // Product details
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Product name
                       Text(
                         item.product.name,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -200,8 +437,6 @@ class CartScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-
-                      // Size and color chips
                       if (item.selectedSize != null || item.selectedColor != null)
                         Wrap(
                           spacing: 6,
@@ -213,8 +448,6 @@ class CartScreen extends StatelessWidget {
                           ],
                         ),
                       const SizedBox(height: 12),
-
-                      // Price and quantity
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -239,8 +472,6 @@ class CartScreen extends StatelessWidget {
                                 ),
                             ],
                           ),
-
-                          // Animated quantity selector
                           AnimatedQuantitySelector(
                             quantity: item.quantity,
                             compact: true,
@@ -279,8 +510,8 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  /// Build order summary section
-  Widget _buildOrderSummary(BuildContext context, CartProvider cart) {
+  /// Mobile order summary (bottom sheet style)
+  Widget _buildMobileOrderSummary(BuildContext context, CartProvider cart) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -298,7 +529,6 @@ class CartScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag indicator
             Container(
               width: 40,
               height: 4,
@@ -308,8 +538,6 @@ class CartScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-
-            // Coupon code input
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -354,8 +582,6 @@ class CartScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Summary rows with animations
             _buildAnimatedSummaryRow(context, AppStrings.subtotal,
                 '\$${cart.subtotal.toStringAsFixed(2)}', 0),
             const SizedBox(height: 10),
@@ -370,8 +596,6 @@ class CartScreen extends StatelessWidget {
             const SizedBox(height: 10),
             _buildAnimatedSummaryRow(context, AppStrings.tax,
                 '\$${cart.tax.toStringAsFixed(2)}', 2),
-
-            // Savings badge
             if (cart.totalSavings > 0) ...[
               const SizedBox(height: 12),
               Container(
@@ -397,10 +621,7 @@ class CartScreen extends StatelessWidget {
                 ),
               ),
             ],
-
             const Divider(height: 28),
-
-            // Total row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -428,8 +649,6 @@ class CartScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-
-            // Checkout button with animation
             CustomButton(
               text: '${AppStrings.checkout} (${cart.itemCount} items)',
               icon: Iconsax.shopping_bag,
@@ -449,7 +668,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  /// Build animated summary row
+  /// Build animated summary row (mobile)
   Widget _buildAnimatedSummaryRow(
     BuildContext context,
     String label,

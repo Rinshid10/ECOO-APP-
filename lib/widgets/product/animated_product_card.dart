@@ -35,6 +35,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -85,22 +86,33 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
           ),
         );
       },
-      child: GestureDetector(
-        onTapDown: _onTapDown,
-        onTapUp: _onTapUp,
-        onTapCancel: _onTapCancel,
-        onTap: () {
-          HapticFeedback.lightImpact();
-          widget.onTap?.call();
-        },
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: _buildCard(context),
-            );
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onTap?.call();
           },
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: _isHovered
+                    ? (Matrix4.identity()..translate(0.0, -4.0))
+                    : Matrix4.identity(),
+                child: Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: _buildCard(context),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -115,9 +127,9 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
           BoxShadow(
             color: _isPressed
                 ? AppColors.primary.withOpacity(0.15)
-                : AppColors.shadow.withOpacity(0.08),
-            blurRadius: _isPressed ? 20 : 15,
-            offset: Offset(0, _isPressed ? 8 : 5),
+                : AppColors.shadow.withOpacity(_isHovered ? 0.16 : 0.08),
+            blurRadius: _isPressed ? 20 : (_isHovered ? 20 : 15),
+            offset: Offset(0, _isPressed ? 8 : (_isHovered ? 8 : 5)),
           ),
         ],
       ),
@@ -198,7 +210,9 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
   }
 
   Widget _buildImageSection(BuildContext context) {
-    return Stack(
+    return AspectRatio(
+      aspectRatio: 1.0,
+      child: Stack(
       children: [
         // Product image with hero animation
         Hero(
@@ -207,15 +221,14 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: CachedNetworkImage(
               imageUrl: widget.product.imageUrl,
-              height: 140,
               width: double.infinity,
+              height: double.infinity,
               fit: BoxFit.cover,
               placeholder: (context, url) => const ShimmerLoading(
-                height: 140,
+                height: double.infinity,
                 borderRadius: 0,
               ),
               errorWidget: (context, url, error) => Container(
-                height: 140,
                 color: AppColors.grey100,
                 child: const Icon(Iconsax.image, size: 40, color: AppColors.grey400),
               ),
@@ -305,6 +318,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
             ),
           ),
       ],
+      ),
     );
   }
 

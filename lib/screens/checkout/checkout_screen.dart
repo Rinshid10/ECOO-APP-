@@ -3,13 +3,15 @@ import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/custom_button.dart';
 
-/// Checkout screen for completing purchases
-/// Shows order summary, delivery address, and payment options
+/// Checkout screen - responsive layout
+/// Desktop: centered with max width, cleaner layout
+/// Mobile: full-width stepper
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -23,31 +25,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: AppStrings.checkout,
-      ),
-      body: Column(
-        children: [
-          // Stepper indicator
-          _buildStepIndicator(context),
-
-          // Step content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: _buildCurrentStep(context),
-            ),
+      appBar: isDesktop ? null : const CustomAppBar(title: AppStrings.checkout),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isDesktop ? Responsive.narrowContentWidth : double.infinity,
           ),
-
-          // Bottom bar
-          _buildBottomBar(context),
-        ],
+          child: Column(
+            children: [
+              if (isDesktop) ...[
+                const SizedBox(height: 40),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Iconsax.arrow_left),
+                        label: const Text('Back to Cart'),
+                      ),
+                      const Spacer(),
+                      Text(
+                        AppStrings.checkout,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(width: 120),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              _buildStepIndicator(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(isDesktop ? 24 : 16),
+                  child: _buildCurrentStep(context),
+                ),
+              ),
+              _buildBottomBar(context),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  /// Build step indicator
   Widget _buildStepIndicator(BuildContext context) {
     final steps = ['Address', 'Payment', 'Review'];
 
@@ -70,7 +98,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           return Row(
             children: [
-              // Step circle
               Container(
                 width: 32,
                 height: 32,
@@ -95,8 +122,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Step label
               Text(
                 steps[index],
                 style: TextStyle(
@@ -104,8 +129,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
-
-              // Connector line
               if (index < steps.length - 1)
                 Container(
                   width: 40,
@@ -120,7 +143,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build current step content
   Widget _buildCurrentStep(BuildContext context) {
     switch (_currentStep) {
       case 0:
@@ -134,7 +156,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  /// Build address step
   Widget _buildAddressStep(BuildContext context) {
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
@@ -150,15 +171,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
             ),
             const SizedBox(height: 16),
-
-            // Selected address
             if (address != null)
               _buildAddressCard(context, address.name, address.formattedAddress,
                   isSelected: true),
-
             const SizedBox(height: 16),
-
-            // Add new address button
             OutlinedButton.icon(
               onPressed: () {},
               icon: const Icon(Iconsax.add),
@@ -176,7 +192,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build address card
   Widget _buildAddressCard(BuildContext context, String title, String address,
       {bool isSelected = false}) {
     return Container(
@@ -228,7 +243,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build payment step
   Widget _buildPaymentStep(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,8 +254,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
         ),
         const SizedBox(height: 16),
-
-        // Payment methods
         _buildPaymentOption(
           context: context,
           value: 'card',
@@ -274,7 +286,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build payment option
   Widget _buildPaymentOption({
     required BuildContext context,
     required String value,
@@ -341,7 +352,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build review step
   Widget _buildReviewStep(BuildContext context) {
     return Consumer<CartProvider>(
       builder: (context, cart, child) {
@@ -355,8 +365,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
             ),
             const SizedBox(height: 16),
-
-            // Order items
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -396,11 +404,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     );
                   }),
                   const Divider(),
-                  _buildSummaryRow(context, AppStrings.subtotal,
+                  _buildCheckoutSummaryRow(context, AppStrings.subtotal,
                       '\$${cart.subtotal.toStringAsFixed(2)}'),
-                  _buildSummaryRow(context, AppStrings.shipping,
-                      cart.shippingCost == 0 ? 'Free' : '\$${cart.shippingCost.toStringAsFixed(2)}'),
-                  _buildSummaryRow(
+                  _buildCheckoutSummaryRow(
+                      context,
+                      AppStrings.shipping,
+                      cart.shippingCost == 0
+                          ? 'Free'
+                          : '\$${cart.shippingCost.toStringAsFixed(2)}'),
+                  _buildCheckoutSummaryRow(
                       context, AppStrings.tax, '\$${cart.tax.toStringAsFixed(2)}'),
                   const Divider(),
                   Row(
@@ -430,8 +442,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build summary row
-  Widget _buildSummaryRow(BuildContext context, String label, String value) {
+  Widget _buildCheckoutSummaryRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -452,7 +463,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Build bottom bar
   Widget _buildBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -469,7 +479,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            // Back button
             if (_currentStep > 0)
               Expanded(
                 child: CustomButton(
@@ -479,8 +488,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
             if (_currentStep > 0) const SizedBox(width: 16),
-
-            // Continue/Place Order button
             Expanded(
               flex: 2,
               child: CustomButton(
@@ -500,9 +507,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Place order
   void _placeOrder(BuildContext context) {
-    // Show success dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -553,7 +558,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             CustomButton(
               text: 'Continue Shopping',
               onPressed: () {
-                // Clear cart and navigate home
                 context.read<CartProvider>().clearCart();
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },

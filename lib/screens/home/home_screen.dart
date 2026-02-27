@@ -19,7 +19,7 @@ import '../product_detail/product_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 
 /// Home screen - Main landing page of the app
-/// Displays banners, categories, featured products, and more
+/// Responsive: shows grid on desktop, horizontal scroll on mobile
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -32,7 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late PageController _bannerPageController;
   Timer? _autoPlayTimer;
 
-  // Banner data with network images
   final List<Map<String, String>> _banners = [
     {
       'image': 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800',
@@ -54,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _bannerPageController = PageController(viewportFraction: 0.9);
+    _bannerPageController = PageController(viewportFraction: 0.92);
     _startAutoPlay();
   }
 
@@ -84,14 +83,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // App bar with search
-            SliverToBoxAdapter(
-              child: _buildHeader(context),
-            ),
+            // Header (hide on desktop - nav bar handles it)
+            if (!isDesktop)
+              SliverToBoxAdapter(
+                child: _buildHeader(context),
+              ),
 
             // Banner carousel
             SliverToBoxAdapter(
@@ -105,17 +107,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Featured products section
             SliverToBoxAdapter(
-              child: _buildFeaturedSection(context),
+              child: _buildProductSection(
+                context,
+                title: AppStrings.featuredProducts,
+                products: ProductRepository.featuredProducts,
+              ),
             ),
 
             // New arrivals section
             SliverToBoxAdapter(
-              child: _buildNewArrivalsSection(context),
+              child: _buildProductSection(
+                context,
+                title: AppStrings.newArrivals,
+                products: ProductRepository.newArrivals,
+              ),
             ),
 
             // Best sellers section
             SliverToBoxAdapter(
-              child: _buildBestSellersSection(context),
+              child: _buildProductSection(
+                context,
+                title: AppStrings.bestSellers,
+                products: ProductRepository.bestSellers,
+              ),
             ),
 
             // Bottom padding
@@ -128,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Build header with logo, search, and notification
+  /// Build header with logo, search, and notification (mobile only)
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -137,11 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          // Logo and notification row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Logo and app name
               Row(
                 children: [
                   Container(
@@ -177,8 +189,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-
-              // Notification button
               IconButton(
                 onPressed: () {
                   Navigator.push(
@@ -192,10 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          // Search bar
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -215,46 +222,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Build banner carousel slider
   Widget _buildBannerCarousel(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: Responsive.bannerHeight(context),
-          child: PageView.builder(
-            controller: _bannerPageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentBannerIndex = index;
-              });
-            },
-            itemCount: _banners.length,
-            itemBuilder: (context, index) {
-              final banner = _banners[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: _buildBannerItem(context, banner),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
+    final isDesktop = Responsive.isDesktop(context);
 
-        // Page indicator
-        AnimatedSmoothIndicator(
-          activeIndex: _currentBannerIndex,
-          count: _banners.length,
-          effect: const ExpandingDotsEffect(
-            dotHeight: 8,
-            dotWidth: 8,
-            activeDotColor: AppColors.primary,
-            dotColor: AppColors.grey300,
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 8.0 : 0,
+      ),
+      child: Column(
+        children: [
+          if (isDesktop) const SizedBox(height: 16),
+          SizedBox(
+            height: Responsive.bannerHeight(context),
+            child: PageView.builder(
+              controller: _bannerPageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentBannerIndex = index;
+                });
+              },
+              itemCount: _banners.length,
+              itemBuilder: (context, index) {
+                final banner = _banners[index];
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 8.0 : 8.0,
+                  ),
+                  child: _buildBannerItem(context, banner),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          AnimatedSmoothIndicator(
+            activeIndex: _currentBannerIndex,
+            count: _banners.length,
+            effect: const ExpandingDotsEffect(
+              dotHeight: 8,
+              dotWidth: 8,
+              activeDotColor: AppColors.primary,
+              dotColor: AppColors.grey300,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   /// Build individual banner item
   Widget _buildBannerItem(BuildContext context, Map<String, String> banner) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
@@ -272,7 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Background image
             CachedNetworkImage(
               imageUrl: banner['image']!,
               fit: BoxFit.cover,
@@ -283,8 +299,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppColors.primary.withOpacity(0.2),
               ),
             ),
-
-            // Gradient overlay
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -297,19 +311,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
-            // Banner text
             Positioned(
-              left: 20,
-              bottom: 30,
+              left: isDesktop ? 48 : 20,
+              bottom: isDesktop ? 48 : 30,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     banner['title']!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textWhite,
-                      fontSize: 24,
+                      fontSize: isDesktop ? 36 : 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -318,24 +330,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     banner['subtitle']!,
                     style: TextStyle(
                       color: AppColors.textWhite.withOpacity(0.9),
-                      fontSize: 16,
+                      fontSize: isDesktop ? 20 : 16,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 28 : 20,
+                      vertical: isDesktop ? 14 : 10,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.textWhite,
                       borderRadius: BorderRadius.circular(25),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Shop Now',
                       style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
+                        fontSize: isDesktop ? 16 : 14,
                       ),
                     ),
                   ),
@@ -348,15 +361,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Build categories section with horizontal scroll
+  /// Build categories section
   Widget _buildCategoriesSection(BuildContext context) {
     final categories = ProductRepository.categories;
+    final isDesktop = Responsive.isDesktop(context);
+    final displayCategories = categories.length > 8
+        ? categories.sublist(0, 8)
+        : categories;
 
     return Column(
       children: [
         SectionHeader(
           title: AppStrings.topCategories,
           actionText: AppStrings.viewAll,
+          padding: EdgeInsets.symmetric(
+            horizontal: Responsive.horizontalPadding(context),
+            vertical: 8,
+          ),
           onActionPressed: () {
             Navigator.push(
               context,
@@ -364,19 +385,17 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
-        SizedBox(
-          height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
+        if (isDesktop)
+          // Desktop: show all categories in a wrap layout
+          Padding(
             padding: EdgeInsets.symmetric(
               horizontal: Responsive.horizontalPadding(context),
             ),
-            itemCount: categories.length > 8 ? 8 : categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: CategoryCard(
+            child: Wrap(
+              spacing: 28,
+              runSpacing: 16,
+              children: displayCategories.map((category) {
+                return CategoryCard(
                   category: category,
                   showProductCount: false,
                   onTap: () {
@@ -389,130 +408,119 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build featured products section
-  Widget _buildFeaturedSection(BuildContext context) {
-    final featuredProducts = ProductRepository.featuredProducts;
-
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        SectionHeader(
-          title: AppStrings.featuredProducts,
-          actionText: AppStrings.viewAll,
-          onActionPressed: () {
-            // Navigate to all featured products
-          },
-        ),
-        SizedBox(
-          height: 280,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(
-              horizontal: Responsive.horizontalPadding(context),
+                );
+              }).toList(),
             ),
-            itemCount: featuredProducts.length,
-            itemBuilder: (context, index) {
-              final product = featuredProducts[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: SizedBox(
-                  width: 180,
-                  child: ProductCard(
-                    product: product,
-                    onTap: () => _navigateToProductDetail(product),
+          )
+        else
+          // Mobile: horizontal scroll
+          SizedBox(
+            height: 110,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.horizontalPadding(context),
+              ),
+              itemCount: displayCategories.length,
+              itemBuilder: (context, index) {
+                final category = displayCategories[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: CategoryCard(
+                    category: category,
+                    showProductCount: false,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryProductsScreen(
+                            category: category,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
 
-  /// Build new arrivals section
-  Widget _buildNewArrivalsSection(BuildContext context) {
-    final newArrivals = ProductRepository.newArrivals;
+  /// Build product section - grid on desktop, horizontal scroll on mobile
+  Widget _buildProductSection(
+    BuildContext context, {
+    required String title,
+    required List<Product> products,
+  }) {
+    final isDesktop = Responsive.isDesktop(context);
+    final isTablet = Responsive.isTablet(context);
 
     return Column(
       children: [
         const SizedBox(height: 16),
         SectionHeader(
-          title: AppStrings.newArrivals,
+          title: title,
           actionText: AppStrings.viewAll,
+          padding: EdgeInsets.symmetric(
+            horizontal: Responsive.horizontalPadding(context),
+            vertical: 8,
+          ),
           onActionPressed: () {},
         ),
-        SizedBox(
-          height: 280,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
+        if (isDesktop || isTablet)
+          // Grid layout for desktop/tablet
+          Padding(
             padding: EdgeInsets.symmetric(
               horizontal: Responsive.horizontalPadding(context),
             ),
-            itemCount: newArrivals.length,
-            itemBuilder: (context, index) {
-              final product = newArrivals[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: SizedBox(
-                  width: 180,
-                  child: ProductCard(
-                    product: product,
-                    onTap: () => _navigateToProductDetail(product),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build best sellers section
-  Widget _buildBestSellersSection(BuildContext context) {
-    final bestSellers = ProductRepository.bestSellers;
-
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        SectionHeader(
-          title: AppStrings.bestSellers,
-          actionText: AppStrings.viewAll,
-          onActionPressed: () {},
-        ),
-        SizedBox(
-          height: 280,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(
-              horizontal: Responsive.horizontalPadding(context),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: Responsive.productGridColumns(context),
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: isDesktop ? 0.62 : 0.68,
+              ),
+              itemCount: products.length > (isDesktop ? 5 : 3)
+                  ? (isDesktop ? 5 : 3)
+                  : products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return ProductCard(
+                  product: product,
+                  onTap: () => _navigateToProductDetail(product),
+                );
+              },
             ),
-            itemCount: bestSellers.length,
-            itemBuilder: (context, index) {
-              final product = bestSellers[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: SizedBox(
-                  width: 180,
-                  child: ProductCard(
-                    product: product,
-                    onTap: () => _navigateToProductDetail(product),
+          )
+        else
+          // Horizontal scroll for mobile
+          SizedBox(
+            height: 280,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.horizontalPadding(context),
+              ),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: SizedBox(
+                    width: 180,
+                    child: ProductCard(
+                      product: product,
+                      onTap: () => _navigateToProductDetail(product),
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }

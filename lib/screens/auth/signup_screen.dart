@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_snackbar.dart';
 import '../main_navigation.dart';
@@ -120,80 +121,89 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-
-                    // Back button
-                    _buildBackButton(context),
-                    const SizedBox(height: 30),
-
-                    // Header
-                    _buildHeader(context),
-                    const SizedBox(height: 32),
-
-                    // Full name field
-                    _buildNameField(context),
-                    const SizedBox(height: 20),
-
-                    // Email field
-                    _buildEmailField(context),
-                    const SizedBox(height: 20),
-
-                    // Phone field
-                    _buildPhoneField(context),
-                    const SizedBox(height: 20),
-
-                    // Password field
-                    _buildPasswordField(context),
-
-                    // Password strength indicator
-                    if (_passwordController.text.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      _buildPasswordStrength(context),
-                    ],
-                    const SizedBox(height: 20),
-
-                    // Confirm password field
-                    _buildConfirmPasswordField(context),
-                    const SizedBox(height: 24),
-
-                    // Terms and conditions
-                    _buildTermsCheckbox(context),
-                    const SizedBox(height: 32),
-
-                    // Sign up button
-                    _buildSignUpButton(context),
-                    const SizedBox(height: 32),
-
-                    // Divider with text
-                    _buildDivider(context),
-                    const SizedBox(height: 32),
-
-                    // Social sign up
-                    _buildSocialSignUp(context),
-                    const SizedBox(height: 40),
-
-                    // Login link
-                    _buildLoginLink(context),
-                    const SizedBox(height: 20),
-                  ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(isDesktop ? 48 : 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 480 : double.infinity,
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: isDesktop
+                        ? Container(
+                            padding: const EdgeInsets.all(40),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.shadow.withOpacity(0.1),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: _buildForm(context),
+                          )
+                        : _buildForm(context),
+                  ),
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          if (!isDesktop) ...[
+            const SizedBox(height: 20),
+            _buildBackButton(context),
+            const SizedBox(height: 30),
+          ],
+          _buildHeader(context),
+          const SizedBox(height: 32),
+          _buildNameField(context),
+          const SizedBox(height: 20),
+          _buildEmailField(context),
+          const SizedBox(height: 20),
+          _buildPhoneField(context),
+          const SizedBox(height: 20),
+          _buildPasswordField(context),
+          if (_passwordController.text.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildPasswordStrength(context),
+          ],
+          const SizedBox(height: 20),
+          _buildConfirmPasswordField(context),
+          const SizedBox(height: 24),
+          _buildTermsCheckbox(context),
+          const SizedBox(height: 32),
+          _buildSignUpButton(context),
+          const SizedBox(height: 32),
+          _buildDivider(context),
+          const SizedBox(height: 32),
+          _buildSocialSignUp(context),
+          const SizedBox(height: 40),
+          _buildLoginLink(context),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -222,8 +232,10 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   /// Build header
   Widget _buildHeader(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         // Icon with animation
         TweenAnimationBuilder<double>(

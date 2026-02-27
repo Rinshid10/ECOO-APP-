@@ -10,8 +10,7 @@ import '../../widgets/product/product_card.dart';
 import '../product_detail/product_detail_screen.dart';
 import '../cart/cart_screen.dart';
 
-/// Screen showing products within a specific category
-/// Includes sorting and filtering options
+/// Category products screen - responsive grid
 class CategoryProductsScreen extends StatefulWidget {
   final Category category;
 
@@ -38,63 +37,89 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   Widget build(BuildContext context) {
     final products = ProductRepository.getProductsByCategory(widget.category.name);
     final sortedProducts = _getSortedProducts(products);
-    final columns = Responsive.gridColumns(context);
+    final columns = Responsive.productGridColumns(context);
+    final isDesktop = Responsive.isDesktop(context);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: widget.category.name,
-        showCartIcon: true,
-        onCartPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CartScreen()),
-          );
-        },
-      ),
+      appBar: isDesktop
+          ? null
+          : CustomAppBar(
+              title: widget.category.name,
+              showCartIcon: true,
+              onCartPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartScreen()),
+                );
+              },
+            ),
       body: Column(
-        children: [
-          // Sort and filter bar
-          _buildSortFilterBar(context, products.length),
-
-          // Products grid
-          Expanded(
-            child: products.isEmpty
-                ? _buildEmptyState()
-                : GridView.builder(
-                    padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.65,
-                    ),
-                    itemCount: sortedProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = sortedProducts[index];
-                      return ProductCard(
-                        product: product,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ProductDetailScreen(product: product),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isDesktop)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Iconsax.arrow_left),
+                        label: const Text('Back'),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        widget.category.name,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              _buildSortFilterBar(context, products.length),
+
+              Expanded(
+                child: products.isEmpty
+                    ? _buildEmptyState()
+                    : GridView.builder(
+                        padding: EdgeInsets.all(
+                            Responsive.horizontalPadding(context)),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: isDesktop ? 0.62 : 0.65,
+                        ),
+                        itemCount: sortedProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = sortedProducts[index];
+                          return ProductCard(
+                            product: product,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ProductDetailScreen(product: product),
+                                ),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                  ),
-          ),
-        ],
+                      ),
+              ),
+            ],
       ),
     );
   }
 
-  /// Build sort and filter bar
   Widget _buildSortFilterBar(BuildContext context, int productCount) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.horizontalPadding(context),
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         boxShadow: [
@@ -108,25 +133,18 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Product count
           Text(
             '$productCount Products',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
           ),
-
-          // Sort and filter buttons
           Row(
             children: [
-              // Sort button
               GestureDetector(
                 onTap: () => _showSortBottomSheet(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.grey300),
                     borderRadius: BorderRadius.circular(8),
@@ -135,24 +153,16 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                     children: [
                       const Icon(Iconsax.sort, size: 18),
                       const SizedBox(width: 8),
-                      Text(
-                        _sortBy,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      Text(_sortBy, style: Theme.of(context).textTheme.bodySmall),
                     ],
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Filter button
               GestureDetector(
                 onTap: () => _showFilterBottomSheet(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.grey300),
                     borderRadius: BorderRadius.circular(8),
@@ -173,37 +183,27 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     );
   }
 
-  /// Build empty state widget
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Iconsax.box,
-            size: 80,
-            color: AppColors.grey300,
-          ),
+          Icon(Iconsax.box, size: 80, color: AppColors.grey300),
           const SizedBox(height: 16),
-          Text(
-            'No products found',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
+          Text('No products found',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  )),
           const SizedBox(height: 8),
-          Text(
-            'Check back later for new arrivals',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textLight,
-                ),
-          ),
+          Text('Check back later for new arrivals',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textLight,
+                  )),
         ],
       ),
     );
   }
 
-  /// Show sort options bottom sheet
   void _showSortBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -217,10 +217,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Sort By',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              Text('Sort By', style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 16),
               ...List.generate(_sortOptions.length, (index) {
                 final option = _sortOptions[index];
@@ -242,7 +239,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     );
   }
 
-  /// Show filter bottom sheet
   void _showFilterBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -265,14 +261,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Filters',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Reset'),
-                      ),
+                      Text('Filters',
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      TextButton(onPressed: () {}, child: const Text('Reset')),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -280,11 +271,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                     child: ListView(
                       controller: scrollController,
                       children: [
-                        // Price range
-                        Text(
-                          'Price Range',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+                        Text('Price Range',
+                            style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 12),
                         RangeSlider(
                           values: const RangeValues(0, 500),
@@ -293,14 +281,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                           divisions: 20,
                           onChanged: (values) {},
                         ),
-
                         const SizedBox(height: 24),
-
-                        // Rating
-                        Text(
-                          'Rating',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+                        Text('Rating',
+                            style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 12),
                         Wrap(
                           spacing: 8,
@@ -339,7 +322,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     );
   }
 
-  /// Get sorted products based on selection
   List<Product> _getSortedProducts(List<Product> products) {
     switch (_sortBy) {
       case 'Price: Low to High':

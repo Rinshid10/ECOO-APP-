@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter.bat analyze lib/ 2>&1 | head -80)"
+    ]
+  }
+}

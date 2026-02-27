@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../widgets/common/custom_button.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
@@ -91,151 +92,284 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
+            child: isDesktop ? _buildDesktopLayout(context) : _buildMobileLayout(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: Responsive.maxContentWidth),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 40),
             child: Column(
               children: [
-                // Top bar with admin link and skip button
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Admin access (subtle)
-                      TextButton.icon(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminLoginScreen(),
+                // Top bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppColors.primary, AppColors.primaryLight],
                             ),
-                          );
-                        },
-                        icon: Icon(
-                          Iconsax.setting_2,
-                          size: 18,
-                          color: AppColors.textSecondary.withOpacity(0.6),
-                        ),
-                        label: Text(
-                          'Admin',
-                          style: TextStyle(
-                            color: AppColors.textSecondary.withOpacity(0.6),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: const Icon(Iconsax.shop, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          AppStrings.appName,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AdminLoginScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icon(Iconsax.setting_2, size: 18,
+                              color: AppColors.textSecondary.withOpacity(0.6)),
+                          label: Text('Admin',
+                              style: TextStyle(
+                                color: AppColors.textSecondary.withOpacity(0.6),
+                                fontWeight: FontWeight.w500,
+                              )),
+                        ),
+                        const SizedBox(width: 16),
+                        TextButton(
+                          onPressed: _navigateToMain,
+                          child: const Text('Skip'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 48),
+
+                // Features grid
+                Row(
+                  children: _onboardingItems.map((item) {
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [item.color, item.color.withOpacity(0.7)],
+                                ),
+                                borderRadius: BorderRadius.circular(28),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: item.color.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(item.icon, size: 44, color: Colors.white),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              item.title,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.description,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    height: 1.5,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                      // Skip button
-                      TextButton(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          _navigateToMain();
-                        },
-                        child: Text(
-                          'Skip',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  }).toList(),
                 ),
+                const SizedBox(height: 48),
 
-                // Page view with onboarding items
-                Expanded(
-                  flex: 3,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _onboardingItems.length,
-                    onPageChanged: (index) {
-                      setState(() => _currentPage = index);
-                    },
-                    itemBuilder: (context, index) {
-                      return _buildOnboardingPage(_onboardingItems[index]);
-                    },
-                  ),
-                ),
-
-                // Page indicator
-                _buildPageIndicator(),
-                const SizedBox(height: 40),
-
-                // Auth buttons
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                // Auth buttons centered
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
                   child: Column(
                     children: [
-                      // Sign up button
                       CustomButton(
                         text: 'Create Account',
                         onPressed: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignUpScreen(),
-                            ),
-                          );
+                          Navigator.push(context, MaterialPageRoute(
+                              builder: (context) => const SignUpScreen()));
                         },
                       ),
                       const SizedBox(height: 16),
-
-                      // Login button
                       CustomButton(
                         text: 'Sign In',
                         onPressed: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                          );
+                          Navigator.push(context, MaterialPageRoute(
+                              builder: (context) => const LoginScreen()));
                         },
                       ),
                       const SizedBox(height: 24),
-
-                      // Continue as guest
                       GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _navigateToMain();
-                        },
+                        onTap: _navigateToMain,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Continue as Guest',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
+                            Text('Continue as Guest',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w500,
+                                    )),
                             const SizedBox(width: 4),
-                            const Icon(
-                              Icons.arrow_forward,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
+                            const Icon(Icons.arrow_forward, size: 18,
+                                color: AppColors.textSecondary),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return Column(
+      children: [
+        // Top bar with admin link and skip button
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => const AdminLoginScreen()));
+                },
+                icon: Icon(Iconsax.setting_2, size: 18,
+                    color: AppColors.textSecondary.withOpacity(0.6)),
+                label: Text('Admin',
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withOpacity(0.6),
+                      fontWeight: FontWeight.w500, fontSize: 13,
+                    )),
+              ),
+              TextButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _navigateToMain();
+                },
+                child: Text('Skip',
+                    style: TextStyle(
+                      color: AppColors.textSecondary, fontWeight: FontWeight.w600,
+                    )),
+              ),
+            ],
+          ),
+        ),
+
+        Expanded(
+          flex: 3,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: _onboardingItems.length,
+            onPageChanged: (index) {
+              setState(() => _currentPage = index);
+            },
+            itemBuilder: (context, index) {
+              return _buildOnboardingPage(_onboardingItems[index]);
+            },
+          ),
+        ),
+
+        _buildPageIndicator(),
+        const SizedBox(height: 40),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              CustomButton(
+                text: 'Create Account',
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => const SignUpScreen()));
+                },
+              ),
+              const SizedBox(height: 16),
+              CustomButton(
+                text: 'Sign In',
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => const LoginScreen()));
+                },
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _navigateToMain();
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Continue as Guest',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            )),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward, size: 18,
+                        color: AppColors.textSecondary),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+      ],
     );
   }
 

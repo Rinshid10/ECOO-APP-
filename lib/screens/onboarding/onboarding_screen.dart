@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../widgets/common/custom_button.dart';
 import '../main_navigation.dart';
 
@@ -48,101 +49,107 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _navigateToHome,
-                child: Text(
-                  AppStrings.skip,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isDesktop ? Responsive.narrowContentWidth : double.infinity,
             ),
-
-            // Page view
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                },
-                itemCount: _pages.length,
-                itemBuilder: (context, index) {
-                  return _buildPage(_pages[index]);
-                },
-              ),
-            ),
-
-            // Page indicator and buttons
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Page indicator
-                  SmoothPageIndicator(
-                    controller: _pageController,
-                    count: _pages.length,
-                    effect: ExpandingDotsEffect(
-                      dotHeight: 10,
-                      dotWidth: 10,
-                      activeDotColor: _pages[_currentPage].color,
-                      dotColor: AppColors.grey300,
+            child: Column(
+              children: [
+                // Skip button
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: EdgeInsets.all(isDesktop ? 24 : 8),
+                    child: TextButton(
+                      onPressed: _navigateToHome,
+                      child: Text(
+                        AppStrings.skip,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                ),
 
-                  // Navigation buttons
-                  Row(
+                // Page view
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() => _currentPage = index);
+                    },
+                    itemCount: _pages.length,
+                    itemBuilder: (context, index) {
+                      return _buildPage(_pages[index]);
+                    },
+                  ),
+                ),
+
+                // Page indicator and buttons
+                Padding(
+                  padding: EdgeInsets.all(isDesktop ? 32 : 24),
+                  child: Column(
                     children: [
-                      // Back button (hidden on first page)
-                      if (_currentPage > 0)
-                        Expanded(
-                          child: CustomButton(
-                            text: AppStrings.back,
-                            type: ButtonType.outlined,
-                            onPressed: () {
-                              _pageController.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            },
+                      SmoothPageIndicator(
+                        controller: _pageController,
+                        count: _pages.length,
+                        effect: ExpandingDotsEffect(
+                          dotHeight: 10,
+                          dotWidth: 10,
+                          activeDotColor: _pages[_currentPage].color,
+                          dotColor: AppColors.grey300,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          if (_currentPage > 0)
+                            Expanded(
+                              child: CustomButton(
+                                text: AppStrings.back,
+                                type: ButtonType.outlined,
+                                onPressed: () {
+                                  _pageController.previousPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                              ),
+                            ),
+                          if (_currentPage > 0) const SizedBox(width: 16),
+                          Expanded(
+                            flex: _currentPage > 0 ? 2 : 1,
+                            child: CustomButton(
+                              text: _currentPage == _pages.length - 1
+                                  ? AppStrings.getStarted
+                                  : AppStrings.next,
+                              onPressed: () {
+                                if (_currentPage == _pages.length - 1) {
+                                  _navigateToHome();
+                                } else {
+                                  _pageController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                }
+                              },
+                            ),
                           ),
-                        ),
-                      if (_currentPage > 0) const SizedBox(width: 16),
-
-                      // Next/Get Started button
-                      Expanded(
-                        flex: _currentPage > 0 ? 2 : 1,
-                        child: CustomButton(
-                          text: _currentPage == _pages.length - 1
-                              ? AppStrings.getStarted
-                              : AppStrings.next,
-                          onPressed: () {
-                            if (_currentPage == _pages.length - 1) {
-                              _navigateToHome();
-                            } else {
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -6,7 +6,7 @@ import '../../data/models/category_model.dart';
 
 /// Category card widget for displaying categories
 /// Shows category icon/image, name, and product count
-class CategoryCard extends StatelessWidget {
+class CategoryCard extends StatefulWidget {
   final Category category;
   final VoidCallback? onTap;
   final bool showProductCount;
@@ -21,8 +21,15 @@ class CategoryCard extends StatelessWidget {
   });
 
   @override
+  State<CategoryCard> createState() => _CategoryCardState();
+}
+
+class _CategoryCardState extends State<CategoryCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    switch (style) {
+    switch (widget.style) {
       case CategoryCardStyle.icon:
         return _buildIconStyle(context);
       case CategoryCardStyle.image:
@@ -34,9 +41,16 @@ class CategoryCard extends StatelessWidget {
 
   /// Icon style category card
   Widget _buildIconStyle(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isHovered ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Icon container
@@ -44,20 +58,20 @@ class CategoryCard extends StatelessWidget {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: category.color.withOpacity(0.15),
+              color: widget.category.color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
-              category.icon,
+              widget.category.icon,
               size: 32,
-              color: category.color,
+              color: widget.category.color,
             ),
           ),
           const SizedBox(height: 8),
 
           // Category name
           Text(
-            category.name,
+            widget.category.name,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
@@ -67,9 +81,9 @@ class CategoryCard extends StatelessWidget {
           ),
 
           // Product count
-          if (showProductCount)
+          if (widget.showProductCount)
             Text(
-              '${category.productCount} items',
+              '${widget.category.productCount} items',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textLight,
                     fontSize: 11,
@@ -77,13 +91,15 @@ class CategoryCard extends StatelessWidget {
             ),
         ],
       ),
+      ),
+      ),
     );
   }
 
   /// Image style category card
   Widget _buildImageStyle(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -101,7 +117,7 @@ class CategoryCard extends StatelessWidget {
             children: [
               // Background image
               CachedNetworkImage(
-                imageUrl: category.imageUrl,
+                imageUrl: widget.category.imageUrl,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
@@ -111,11 +127,11 @@ class CategoryCard extends StatelessWidget {
                   child: Container(color: AppColors.grey200),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  color: category.color.withOpacity(0.3),
+                  color: widget.category.color.withOpacity(0.3),
                   child: Icon(
-                    category.icon,
+                    widget.category.icon,
                     size: 40,
-                    color: category.color,
+                    color: widget.category.color,
                   ),
                 ),
               ),
@@ -145,16 +161,16 @@ class CategoryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category.name,
+                      widget.category.name,
                       style: const TextStyle(
                         color: AppColors.textWhite,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (showProductCount)
+                    if (widget.showProductCount)
                       Text(
-                        '${category.productCount} items',
+                        '${widget.category.productCount} items',
                         style: TextStyle(
                           color: AppColors.textWhite.withOpacity(0.8),
                           fontSize: 12,
@@ -173,7 +189,7 @@ class CategoryCard extends StatelessWidget {
   /// Compact style category card (horizontal)
   Widget _buildCompactStyle(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -194,13 +210,13 @@ class CategoryCard extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: category.color.withOpacity(0.15),
+                color: widget.category.color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                category.icon,
+                widget.category.icon,
                 size: 24,
-                color: category.color,
+                color: widget.category.color,
               ),
             ),
             const SizedBox(width: 16),
@@ -211,14 +227,14 @@ class CategoryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    category.name,
+                    widget.category.name,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontSize: 16,
                         ),
                   ),
-                  if (showProductCount)
+                  if (widget.showProductCount)
                     Text(
-                      '${category.productCount} items',
+                      '${widget.category.productCount} items',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textLight,
                           ),

@@ -6,14 +6,16 @@ import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../data/models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../widgets/common/custom_button.dart';
 import '../cart/cart_screen.dart';
 
-/// Product detail screen showing full product information
-/// Includes image gallery, details, size/color selection, and add to cart
+/// Product detail screen - responsive layout
+/// Desktop: side-by-side (image left, details right)
+/// Mobile: stacked layout
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
@@ -36,7 +38,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Set default selections if available
     if (widget.product.sizes != null && widget.product.sizes!.isNotEmpty) {
       _selectedSize = widget.product.sizes!.first;
     }
@@ -53,24 +54,310 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
+    if (isDesktop) {
+      return _buildDesktopLayout(context);
+    }
+    return _buildMobileLayout(context);
+  }
+
+  /// Desktop layout: side-by-side
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: Responsive.maxContentWidth),
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Back button
+                  TextButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Iconsax.arrow_left),
+                    label: const Text('Back to Shopping'),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Main content: image + details side by side
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image gallery (left side)
+                      Expanded(
+                        flex: 5,
+                        child: _buildDesktopImageGallery(context),
+                      ),
+                      const SizedBox(width: 48),
+
+                      // Product details (right side)
+                      Expanded(
+                        flex: 5,
+                        child: _buildDesktopDetails(context),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  // Description & Specifications below
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _buildDescription(context),
+                      ),
+                      const SizedBox(width: 48),
+                      if (widget.product.specifications != null)
+                        Expanded(
+                          flex: 4,
+                          child: _buildSpecifications(context),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 48),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Desktop image gallery
+  Widget _buildDesktopImageGallery(BuildContext context) {
+    return Column(
+      children: [
+        // Main image
+        AspectRatio(
+          aspectRatio: 1,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() => _currentImageIndex = index);
+                  },
+                  itemCount: widget.product.images.length,
+                  itemBuilder: (context, index) {
+                    return CachedNetworkImage(
+                      imageUrl: widget.product.images[index],
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: AppColors.grey100,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: AppColors.grey100,
+                        child: const Icon(Iconsax.image, size: 50),
+                      ),
+                    );
+                  },
+                ),
+                if (widget.product.hasDiscount)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '-${widget.product.discountPercentage}%',
+                        style: const TextStyle(
+                          color: AppColors.textWhite,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Thumbnail strip
+        SizedBox(
+          height: 80,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: widget.product.images.length,
+            itemBuilder: (context, index) {
+              final isSelected = _currentImageIndex == index;
+              return GestureDetector(
+                onTap: () {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: Container(
+                  width: 80,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.grey200,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(11),
+                    child: CachedNetworkImage(
+                      imageUrl: widget.product.images[index],
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Desktop product details (right side)
+  Widget _buildDesktopDetails(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Brand and wishlist
+        _buildBrandRow(context),
+        const SizedBox(height: 12),
+
+        // Product name
+        Text(
+          widget.product.name,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 16),
+
+        // Rating
+        _buildRatingRow(context),
+        const SizedBox(height: 20),
+
+        // Price
+        _buildPriceSection(context),
+        const SizedBox(height: 32),
+
+        // Divider
+        const Divider(),
+        const SizedBox(height: 24),
+
+        // Size selection
+        if (widget.product.sizes != null && widget.product.sizes!.isNotEmpty)
+          _buildSizeSelection(context),
+
+        // Color selection
+        if (widget.product.colors != null && widget.product.colors!.isNotEmpty)
+          _buildColorSelection(context),
+
+        // Quantity selector
+        _buildQuantitySelector(context),
+        const SizedBox(height: 32),
+
+        // Add to cart button (desktop inline)
+        _buildDesktopAddToCart(context),
+      ],
+    );
+  }
+
+  /// Desktop add to cart row
+  Widget _buildDesktopAddToCart(BuildContext context) {
+    return Row(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total Price',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textLight,
+                  ),
+            ),
+            Text(
+              '\$${(widget.product.price * _quantity).toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 32),
+        Expanded(
+          child: Consumer<CartProvider>(
+            builder: (context, cart, child) {
+              return CustomButton(
+                text: AppStrings.addToCart,
+                icon: Iconsax.shopping_cart,
+                onPressed: widget.product.isInStock
+                    ? () {
+                        cart.addToCart(
+                          widget.product,
+                          quantity: _quantity,
+                          selectedSize: _selectedSize,
+                          selectedColor: _selectedColor,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Added to cart'),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                            action: SnackBarAction(
+                              label: 'View Cart',
+                              textColor: AppColors.textWhite,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const CartScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Mobile layout: stacked (original)
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Image gallery app bar
           _buildImageAppBar(context),
-
-          // Product details
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Brand and wishlist
                   _buildBrandRow(context),
                   const SizedBox(height: 8),
-
-                  // Product name
                   Text(
                     widget.product.name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -78,37 +365,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Rating and reviews
                   _buildRatingRow(context),
                   const SizedBox(height: 16),
-
-                  // Price section
                   _buildPriceSection(context),
                   const SizedBox(height: 24),
-
-                  // Size selection
                   if (widget.product.sizes != null &&
                       widget.product.sizes!.isNotEmpty)
                     _buildSizeSelection(context),
-
-                  // Color selection
                   if (widget.product.colors != null &&
                       widget.product.colors!.isNotEmpty)
                     _buildColorSelection(context),
-
-                  // Quantity selector
                   _buildQuantitySelector(context),
                   const SizedBox(height: 24),
-
-                  // Description
                   _buildDescription(context),
                   const SizedBox(height: 24),
-
-                  // Specifications
                   if (widget.product.specifications != null)
                     _buildSpecifications(context),
-
                   const SizedBox(height: 100),
                 ],
               ),
@@ -120,7 +392,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Build image gallery app bar
+  /// Build image gallery app bar (mobile)
   Widget _buildImageAppBar(BuildContext context) {
     return SliverAppBar(
       expandedHeight: 400,
@@ -139,9 +411,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       actions: [
         IconButton(
-          onPressed: () {
-            // Share functionality
-          },
+          onPressed: () {},
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -179,7 +449,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           children: [
-            // Image page view
             PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
@@ -192,9 +461,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
                     color: AppColors.grey100,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (context, url, error) => Container(
                     color: AppColors.grey100,
@@ -203,17 +470,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 );
               },
             ),
-
-            // Discount badge
             if (widget.product.hasDiscount)
               Positioned(
                 top: 100,
                 left: 16,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(20),
@@ -227,8 +489,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
               ),
-
-            // Page indicator
             Positioned(
               bottom: 20,
               left: 0,
@@ -556,7 +816,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Build bottom bar with add to cart button
+  /// Build bottom bar with add to cart button (mobile only)
   Widget _buildBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -573,7 +833,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            // Total price
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,8 +853,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ],
             ),
             const SizedBox(width: 24),
-
-            // Add to cart button
             Expanded(
               child: Consumer<CartProvider>(
                 builder: (context, cart, child) {

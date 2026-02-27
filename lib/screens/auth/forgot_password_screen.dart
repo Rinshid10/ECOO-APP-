@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_snackbar.dart';
 
@@ -63,47 +64,72 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-
-                    // Back button
-                    _buildBackButton(context),
-                    const SizedBox(height: 40),
-
-                    // Header
-                    _buildHeader(context),
-                    const SizedBox(height: 40),
-
-                    // Content based on state
-                    if (!_emailSent) ...[
-                      // Email field
-                      _buildEmailField(context),
-                      const SizedBox(height: 32),
-
-                      // Send reset link button
-                      _buildSendButton(context),
-                    ] else ...[
-                      // Success state
-                      _buildSuccessState(context),
-                    ],
-                  ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(isDesktop ? 48 : 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 480 : double.infinity,
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: isDesktop
+                        ? Container(
+                            padding: const EdgeInsets.all(40),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.shadow.withOpacity(0.1),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: _buildFormContent(context),
+                          )
+                        : _buildFormContent(context),
+                  ),
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFormContent(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          if (!isDesktop) ...[
+            const SizedBox(height: 20),
+            _buildBackButton(context),
+            const SizedBox(height: 40),
+          ],
+          _buildHeader(context),
+          const SizedBox(height: 40),
+          if (!_emailSent) ...[
+            _buildEmailField(context),
+            const SizedBox(height: 32),
+            _buildSendButton(context),
+          ] else ...[
+            _buildSuccessState(context),
+          ],
+        ],
       ),
     );
   }
@@ -132,8 +158,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   /// Build header
   Widget _buildHeader(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         // Animated icon
         TweenAnimationBuilder<double>(

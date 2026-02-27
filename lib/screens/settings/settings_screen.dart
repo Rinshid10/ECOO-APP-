@@ -4,6 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common/custom_snackbar.dart';
 import '../../admin/screens/admin_login_screen.dart';
@@ -58,68 +59,92 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Custom app bar with gradient
-          _buildSliverAppBar(context),
+          if (!isDesktop) _buildSliverAppBar(context),
 
-          // Settings content
+          if (isDesktop)
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: Responsive.narrowContentWidth,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                    child: Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Iconsax.arrow_left),
+                          label: const Text('Back'),
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          AppStrings.settings,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Appearance section
-                  _buildAnimatedSection(
-                    delay: 0,
-                    child: _buildAppearanceSection(context),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: Responsive.narrowContentWidth,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(isDesktop ? 24 : 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildAnimatedSection(
+                        delay: 0,
+                        child: _buildAppearanceSection(context),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAnimatedSection(
+                        delay: 100,
+                        child: _buildNotificationsSection(context),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAnimatedSection(
+                        delay: 200,
+                        child: _buildPrivacySection(context),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAnimatedSection(
+                        delay: 300,
+                        child: _buildLocalizationSection(context),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAnimatedSection(
+                        delay: 400,
+                        child: _buildDataSection(context),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAnimatedSection(
+                        delay: 500,
+                        child: _buildAboutSection(context),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAnimatedSection(
+                        delay: 600,
+                        child: _buildDangerZone(context),
+                      ),
+                      const SizedBox(height: 100),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-
-                  // Notifications section
-                  _buildAnimatedSection(
-                    delay: 100,
-                    child: _buildNotificationsSection(context),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Privacy & Security section
-                  _buildAnimatedSection(
-                    delay: 200,
-                    child: _buildPrivacySection(context),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Localization section
-                  _buildAnimatedSection(
-                    delay: 300,
-                    child: _buildLocalizationSection(context),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Data & Storage section
-                  _buildAnimatedSection(
-                    delay: 400,
-                    child: _buildDataSection(context),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // About & Legal section
-                  _buildAnimatedSection(
-                    delay: 500,
-                    child: _buildAboutSection(context),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Danger zone
-                  _buildAnimatedSection(
-                    delay: 600,
-                    child: _buildDangerZone(context),
-                  ),
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
             ),
           ),
