@@ -14,7 +14,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="/ec/">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -139,7 +139,13 @@
     // Error handling
     window.addEventListener('error', function(e) {
       console.error('Global error:', e.error);
-      showError(e.error ? e.error.message : 'Unknown error occurred');
+      // Don't show error for script loading errors - let Flutter handle it
+      if (e.target && e.target.tagName === 'SCRIPT') {
+        console.error('Script loading error:', e.target.src);
+        showError('Failed to load Flutter bootstrap script. Please ensure all files are uploaded correctly.');
+      } else if (e.error) {
+        showError(e.error.message || 'Unknown error occurred');
+      }
     });
 
     window.addEventListener('unhandledrejection', function(e) {
@@ -178,16 +184,9 @@
         showError('The application is taking longer than expected to load. Please check your internet connection and try again.');
       }
     }, 30000);
-
-    // Load Flutter bootstrap
-    var script = document.createElement('script');
-    script.src = 'flutter_bootstrap.js';
-    script.type = 'application/javascript';
-    script.async = true;
-    script.onerror = function() {
-      showError('Failed to load Flutter bootstrap script. Please ensure all files are uploaded correctly.');
-    };
-    document.body.appendChild(script);
   </script>
+  
+  <!-- Flutter Bootstrap Script - Load this statically so it respects base href -->
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
