@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="/">
 
   <meta charset="UTF-8">
@@ -34,7 +21,6 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
-    /* Loading screen styles */
     body {
       margin: 0;
       padding: 0;
@@ -113,7 +99,6 @@
       transform: scale(1.05);
     }
 
-    /* Hide loading when Flutter app loads */
     .loading-container.hide {
       display: none;
     }
@@ -128,65 +113,54 @@
 
   <!-- Error Screen -->
   <div class="error-container" id="error">
-    <div class="error-title">⚠️ Failed to Load App</div>
+    <div class="error-title">Failed to Load App</div>
     <div class="error-message" id="errorMessage">
-      An error occurred while loading the application. Please check your console for details.
+      An error occurred while loading the application.
     </div>
     <button class="error-button" onclick="location.reload()">Reload Page</button>
   </div>
 
   <script>
-    // Error handling
     window.addEventListener('error', function(e) {
-      console.error('Global error:', e.error);
-      // Don't show error for script loading errors - let Flutter handle it
       if (e.target && e.target.tagName === 'SCRIPT') {
-        console.error('Script loading error:', e.target.src);
-        showError('Failed to load Flutter bootstrap script. Please ensure all files are uploaded correctly.');
-      } else if (e.error) {
-        showError(e.error.message || 'Unknown error occurred');
+        showError('Failed to load application scripts. Please reload.');
       }
-    });
-
-    window.addEventListener('unhandledrejection', function(e) {
-      console.error('Unhandled promise rejection:', e.reason);
-      showError(e.reason ? e.reason.toString() : 'Promise rejection occurred');
-    });
+    }, true);
 
     function showError(message) {
-      const loading = document.getElementById('loading');
-      const error = document.getElementById('error');
-      const errorMessage = document.getElementById('errorMessage');
-      
+      var loading = document.getElementById('loading');
+      var error = document.getElementById('error');
+      var errorMessage = document.getElementById('errorMessage');
       if (loading) loading.classList.add('hide');
       if (error) {
         error.classList.add('show');
-        if (errorMessage) {
-          errorMessage.textContent = message || 'An error occurred while loading the application.';
-        }
+        if (errorMessage && message) errorMessage.textContent = message;
       }
     }
 
-    // Hide loading when Flutter app is ready
     window.addEventListener('flutter-first-frame', function() {
-      const loading = document.getElementById('loading');
-      if (loading) {
-        setTimeout(function() {
-          loading.classList.add('hide');
-        }, 300);
-      }
+      var loading = document.getElementById('loading');
+      if (loading) loading.classList.add('hide');
     });
-
-    // Timeout fallback (show error if app doesn't load in 30 seconds)
-    setTimeout(function() {
-      const loading = document.getElementById('loading');
-      if (loading && !loading.classList.contains('hide')) {
-        showError('The application is taking longer than expected to load. Please check your internet connection and try again.');
-      }
-    }, 30000);
   </script>
-  
-  <!-- Flutter Bootstrap Script - Load this statically so it respects base href -->
-  <script src="flutter_bootstrap.js" async></script>
+
+  <script src="flutter.js" defer></script>
+  <script>
+    window.addEventListener('load', function() {
+      _flutter.loader.load({
+        // Disable service worker to avoid caching issues on Vercel/static hosts
+        serviceWorkerSettings: {
+          serviceWorkerVersion: null
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine({
+            renderer: "canvaskit"
+          }).then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
 </body>
 </html>
