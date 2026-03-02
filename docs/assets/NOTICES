@@ -4967,6 +4967,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 flutter_lints
+go_router
 path_provider
 path_provider_linux
 path_provider_platform_interface
