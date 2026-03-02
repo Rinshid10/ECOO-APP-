@@ -1,38 +1,166 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A professional e-commerce Flutter application.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="ec">
+  <meta name="apple-mobile-web-app-title" content="ShopEase">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>ec</title>
+  <title>ShopEase - E-Commerce</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .loading-container {
+      text-align: center;
+      color: white;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+
+    .error-container {
+      display: none;
+      text-align: center;
+      color: white;
+      padding: 20px;
+      max-width: 500px;
+    }
+
+    .error-container.show {
+      display: block;
+    }
+
+    .error-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .error-message {
+      font-size: 16px;
+      margin-bottom: 20px;
+      opacity: 0.9;
+    }
+
+    .error-button {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .error-button:hover {
+      transform: scale(1.05);
+    }
+
+    .loading-container.hide {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Loading Screen -->
+  <div class="loading-container" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading ShopEase...</div>
+  </div>
+
+  <!-- Error Screen -->
+  <div class="error-container" id="error">
+    <div class="error-title">Failed to Load App</div>
+    <div class="error-message" id="errorMessage">
+      An error occurred while loading the application.
+    </div>
+    <button class="error-button" onclick="location.reload()">Reload Page</button>
+  </div>
+
+  <script>
+    window.addEventListener('error', function(e) {
+      if (e.target && e.target.tagName === 'SCRIPT') {
+        showError('Failed to load application scripts. Please reload.');
+      }
+    }, true);
+
+    function showError(message) {
+      var loading = document.getElementById('loading');
+      var error = document.getElementById('error');
+      var errorMessage = document.getElementById('errorMessage');
+      if (loading) loading.classList.add('hide');
+      if (error) {
+        error.classList.add('show');
+        if (errorMessage && message) errorMessage.textContent = message;
+      }
+    }
+
+    window.addEventListener('flutter-first-frame', function() {
+      var loading = document.getElementById('loading');
+      if (loading) loading.classList.add('hide');
+    });
+  </script>
+
+  <script src="flutter.js" defer></script>
+  <script>
+    window.addEventListener('load', function() {
+      _flutter.loader.load({
+        // Disable service worker to avoid caching issues on Vercel/static hosts
+        serviceWorkerSettings: {
+          serviceWorkerVersion: null
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine({
+            renderer: "canvaskit"
+          }).then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
 </body>
 </html>
