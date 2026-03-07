@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/routing/app_router.dart';
 import '../auth/welcome_screen.dart';
 
 /// Splash screen shown on app launch
@@ -52,20 +55,50 @@ class _SplashScreenState extends State<SplashScreen>
 
   /// Navigate to welcome screen after delay
   void _navigateToHome() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const WelcomeScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      
+      try {
+        // Use GoRouter for web, Navigator for mobile
+        if (kIsWeb) {
+          // Use the router directly for more reliable navigation
+          AppRouter.router.go('/welcome');
+        } else {
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const WelcomeScreen(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 500),
+            ),
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Navigation error: $e');
+        }
+        // Fallback navigation if router.go fails
+        if (kIsWeb && mounted) {
+          try {
+            // Try using context.go as fallback
+            context.go('/welcome');
+          } catch (e2) {
+            if (kDebugMode) {
+              debugPrint('Fallback navigation error: $e2');
+            }
+            // Last resort: use Navigator
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+              );
+            }
+          }
+        }
       }
     });
   }

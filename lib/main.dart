@@ -1,13 +1,16 @@
 import 'dart:ui';
 
+import 'package:ec/screens/auth/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Core
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
+import 'core/constants/supabase_keys.dart';
 import 'core/routing/app_router.dart';
 
 // Providers
@@ -25,7 +28,10 @@ import 'screens/splash/splash_screen.dart';
 /// Main entry point of the application
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  // await Supabase.initialize(
+  //   anonKey: SupabaseKeys.supaKey,
+  //   url: SupabaseKeys.supabaseUrl,
+  // );
   // Only lock orientation on mobile platforms, not on web
   if (!kIsWeb) {
     await SystemChrome.setPreferredOrientations([
@@ -101,7 +107,7 @@ class _MyAppState extends State<MyApp> {
               darkTheme: AppTheme.darkTheme,
               themeMode: themeProvider.themeMode,
               scrollBehavior: AppScrollBehavior(),
-              home: const SplashScreen(),
+              home: const WelcomeScreen(),
             );
           }
         },

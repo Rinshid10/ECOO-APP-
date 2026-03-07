@@ -26,7 +26,7 @@ class AppRouter {
 
   static final GoRouter _router = GoRouter(
     navigatorKey: navigatorKey,
-    initialLocation: '/',
+    initialLocation: '/welcome',
     debugLogDiagnostics: kDebugMode,
     // Error handling
     errorBuilder: (context, state) => Scaffold(
